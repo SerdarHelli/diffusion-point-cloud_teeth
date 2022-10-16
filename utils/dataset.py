@@ -147,7 +147,7 @@ class TeethDataGen(Dataset):
 
     GRAVITATIONAL_AXIS = 1
     
-    def __init__(self, path, cate, scale_mode, transform=None):
+    def __init__(self, path, cates, scale_mode, transform=None):
         super().__init__()
         assert scale_mode is None or scale_mode in ('global_unit', 'shape_unit', 'shape_bbox', 'shape_half', 'shape_34')
         self.path = path
@@ -156,7 +156,7 @@ class TeethDataGen(Dataset):
         self.transform = transform
         self.pointclouds = []
         self.stats = {'mean': np.float32(-31.18510), 'std': np.float32(51.94512)}
-        self.cate=cate
+        self.cate=cates
         self.dirs=os.listdir(self.path)
         self.load()
 
@@ -190,6 +190,7 @@ class TeethDataGen(Dataset):
                 scale = torch.ones([1, 1])
 
             pc = (pc - shift) / scale
+            pc = pc.type(torch.cuda.FloatTensor)
 
             self.pointclouds.append({
                 'pointcloud': pc,

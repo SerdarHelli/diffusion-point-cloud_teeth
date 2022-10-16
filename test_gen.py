@@ -36,14 +36,14 @@ def normalize_point_clouds(pcs, mode, logger):
 # Arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--ckpt', type=str, default='./pretrained/GEN_airplane.pt')
-parser.add_argument('--categories', type=str_list, default=['airplane'])
+parser.add_argument('--categories', type=str, default='lower')
 parser.add_argument('--save_dir', type=str, default='./results')
 parser.add_argument('--device', type=str, default='cuda')
 # Datasets and loaders
-parser.add_argument('--dataset_path', type=str, default='./data/shapenet.hdf5')
-parser.add_argument('--batch_size', type=int, default=128)
+parser.add_argument('--dataset_path_test', required=True, type=str, default='./data/shapenet.hdf5')
+parser.add_argument('--batch_size', type=int, default=16)
 # Sampling
-parser.add_argument('--sample_num_points', type=int, default=2048)
+parser.add_argument('--sample_num_points', type=int, default=8192)
 parser.add_argument('--normalize', type=str, default='shape_bbox', choices=[None, 'shape_unit', 'shape_bbox'])
 parser.add_argument('--seed', type=int, default=9988)
 args = parser.parse_args()
@@ -63,12 +63,12 @@ seed_all(args.seed)
 
 # Datasets and loaders
 logger.info('Loading datasets...')
-test_dset = ShapeNetCore(
-    path=args.dataset_path,
+test_dset = TeethDataGen(
+    path=args.dataset_path_test,
     cates=args.categories,
-    split='test',
     scale_mode=args.normalize,
 )
+
 test_loader = DataLoader(test_dset, batch_size=args.batch_size, num_workers=0)
 
 # Model

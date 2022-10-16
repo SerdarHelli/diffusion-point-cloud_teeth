@@ -41,8 +41,8 @@ parser.add_argument('--dataset_path_val',required=True, type=str, default='./dat
 
 parser.add_argument('--categories', type=str, default='lower')
 parser.add_argument('--scale_mode', type=str, default='shape_unit')
-parser.add_argument('--train_batch_size', type=int, default=128)
-parser.add_argument('--val_batch_size', type=int, default=64)
+parser.add_argument('--train_batch_size', type=int, default=16)
+parser.add_argument('--val_batch_size', type=int, default=8)
 
 # Optimizer and scheduler
 parser.add_argument('--lr', type=float, default=2e-3)
@@ -56,6 +56,7 @@ parser.add_argument('--sched_end_epoch', type=int, default=400*THOUSAND)
 parser.add_argument('--seed', type=int, default=2020)
 parser.add_argument('--logging', type=eval, default=True, choices=[True, False])
 parser.add_argument('--log_root', type=str, default='./logs_gen')
+#device always be cuda
 parser.add_argument('--device', type=str, default='cuda')
 parser.add_argument('--max_iters', type=int, default=float('inf'))
 parser.add_argument('--val_freq', type=int, default=1000)
