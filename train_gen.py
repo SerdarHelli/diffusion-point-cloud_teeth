@@ -30,14 +30,16 @@ parser.add_argument('--truncate_std', type=float, default=2.0)
 parser.add_argument('--latent_flow_depth', type=int, default=14)
 parser.add_argument('--latent_flow_hidden_dim', type=int, default=256)
 parser.add_argument('--num_samples', type=int, default=4)
-parser.add_argument('--sample_num_points', type=int, default=2048)
+parser.add_argument('--sample_num_points', type=int, default=8192)
 parser.add_argument('--kl_weight', type=float, default=0.001)
 parser.add_argument('--residual', type=eval, default=True, choices=[True, False])
 parser.add_argument('--spectral_norm', type=eval, default=False, choices=[True, False])
 
 # Datasets and loaders
-parser.add_argument('--dataset_path', type=str, default='./data/shapenet.hdf5')
-parser.add_argument('--categories', type=str_list, default=['airplane'])
+parser.add_argument('--dataset_path_train',required=True, type=str, default='./data/shapenet.hdf5')
+parser.add_argument('--dataset_path_val',required=True, type=str, default='./data/shapenet.hdf5')
+
+parser.add_argument('--categories', type=str, default='lower')
 parser.add_argument('--scale_mode', type=str, default='shape_unit')
 parser.add_argument('--train_batch_size', type=int, default=128)
 parser.add_argument('--val_batch_size', type=int, default=64)
@@ -80,15 +82,13 @@ logger.info(args)
 logger.info('Loading datasets...')
 
 train_dset = ShapeNetCore(
-    path=args.dataset_path,
+    path=args.dataset_path_train,
     cates=args.categories,
-    split='train',
     scale_mode=args.scale_mode,
 )
 val_dset = ShapeNetCore(
-    path=args.dataset_path,
+    path=args.dataset_path_val,
     cates=args.categories,
-    split='val',
     scale_mode=args.scale_mode,
 )
 train_iter = get_data_iterator(DataLoader(

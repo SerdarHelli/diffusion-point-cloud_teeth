@@ -143,3 +143,71 @@ class ShapeNetCore(Dataset):
             data = self.transform(data)
         return data
 
+class TeethDataGen(Dataset):
+
+    GRAVITATIONAL_AXIS = 1
+    
+    def __init__(self, path, cate, scale_mode, transform=None):
+        super().__init__()
+        assert scale_mode is None or scale_mode in ('global_unit', 'shape_unit', 'shape_bbox', 'shape_half', 'shape_34')
+        self.path = path
+  
+        self.scale_mode = scale_mode
+        self.transform = transform
+        self.pointclouds = []
+        self.stats = {'mean': np.float32(-31.18510), 'std': np.float32(51.94512)}
+        self.cate=cate
+        self.dirs=os.listdir(self.path)
+        self.load()
+
+
+    def load(self):
+
+        for i in range (len(self.dirs)):
+            data=np.load(os.path.join(self.path,self.dirs[i]))
+            pc=torch.from_numpy(data[self.cate])
+
+
+            if self.scale_mode == 'global_unit':
+                shift = pc.mean(dim=0).reshape(1, 3)
+                scale = self.stats['std'].reshape(1, 1)
+            elif self.scale_mode == 'shape_unit':
+                shift = pc.mean(dim=0).reshape(1, 3)
+                scale = pc.flatten().std().reshape(1, 1)
+            elif self.scale_mode == 'shape_half':
+                shift = pc.mean(dim=0).reshape(1, 3)
+                scale = pc.flatten().std().reshape(1, 1) / (0.5)
+            elif self.scale_mode == 'shape_34':
+                shift = pc.mean(dim=0).reshape(1, 3)
+                scale = pc.flatten().std().reshape(1, 1) / (0.75)
+            elif self.scale_mode == 'shape_bbox':
+                pc_max, _ = pc.max(dim=0, keepdim=True) # (1, 3)
+                pc_min, _ = pc.min(dim=0, keepdim=True) # (1, 3)
+                shift = ((pc_min + pc_max) / 2).view(1, 3)
+                scale = (pc_max - pc_min).max().reshape(1, 1) / 2
+            else:
+                shift = torch.zeros([1, 3])
+                scale = torch.ones([1, 1])
+
+            pc = (pc - shift) / scale
+
+            self.pointclouds.append({
+                'pointcloud': pc,
+                'cate': self.cate,
+                'id': i,
+                'shift': shift,
+                'scale': scale
+            })
+
+        # Deterministically shuffle the dataset
+        self.pointclouds.sort(key=lambda data: data['id'], reverse=False)
+        random.Random(2020).shuffle(self.pointclouds)
+
+    def __len__(self):
+        return len(self.pointclouds)
+
+    def __getitem__(self, idx):
+        data = {k:v.clone() if isinstance(v, torch.Tensor) else copy(v) for k, v in self.pointclouds[idx].items()}
+        if self.transform is not None:
+            data = self.transform(data)
+        return data
