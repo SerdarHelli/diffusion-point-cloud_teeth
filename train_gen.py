@@ -81,12 +81,12 @@ logger.info(args)
 # Datasets and loaders
 logger.info('Loading datasets...')
 
-train_dset = ShapeNetCore(
+train_dset = TeethDataGen(
     path=args.dataset_path_train,
     cates=args.categories,
     scale_mode=args.scale_mode,
 )
-val_dset = ShapeNetCore(
+val_dset = TeethDataGen(
     path=args.dataset_path_val,
     cates=args.categories,
     scale_mode=args.scale_mode,
