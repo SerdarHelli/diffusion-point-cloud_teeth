@@ -8,6 +8,7 @@ from scipy.stats import entropy
 from sklearn.neighbors import NearestNeighbors
 from numpy.linalg import norm
 from tqdm.auto import tqdm
+from chamferdist import ChamferDistance
 
 
 _EMD_NOT_IMPL_WARNED = False
@@ -25,22 +26,12 @@ def emd_approx(sample, ref):
 
 
 # Borrow from https://github.com/ThibaultGROUEIX/AtlasNet
-def distChamfer(a, b):
-    x, y = a, b
-    bs, num_points, points_dim = x.size()
-    xx = torch.bmm(x, x.transpose(2, 1))
-    yy = torch.bmm(y, y.transpose(2, 1))
-    zz = torch.bmm(x, y.transpose(2, 1))
-    diag_ind = torch.arange(0, num_points).to(a).long()
-    rx = xx[:, diag_ind, diag_ind].unsqueeze(1).expand_as(xx)
-    ry = yy[:, diag_ind, diag_ind].unsqueeze(1).expand_as(yy)
-    P = (rx.transpose(2, 1) + ry - 2 * zz)
-    return P.min(1)[0], P.min(2)[0]
 
 
 def EMD_CD(sample_pcs, ref_pcs, batch_size, reduced=True):
     N_sample = sample_pcs.shape[0]
     N_ref = ref_pcs.shape[0]
+    chamferDist = ChamferDistance()
     assert N_sample == N_ref, "REF:%d SMP:%d" % (N_ref, N_sample)
 
     cd_lst = []
@@ -52,8 +43,9 @@ def EMD_CD(sample_pcs, ref_pcs, batch_size, reduced=True):
         sample_batch = sample_pcs[b_start:b_end]
         ref_batch = ref_pcs[b_start:b_end]
 
-        dl, dr = distChamfer(sample_batch, ref_batch)
-        cd_lst.append(dl.mean(dim=1) + dr.mean(dim=1))
+
+        dist_forward = chamferDist(sample_batch, ref_batch)
+        cd_lst.append(dist_forward)
 
         emd_batch = emd_approx(sample_batch, ref_batch)
         emd_lst.append(emd_batch)
@@ -78,6 +70,8 @@ def _pairwise_EMD_CD_(sample_pcs, ref_pcs, batch_size, verbose=True):
     all_cd = []
     all_emd = []
     iterator = range(N_sample)
+    chamferDist = ChamferDistance()
+
     if verbose:
         iterator = tqdm(iterator, desc='Pairwise EMD-CD')
     for sample_b_start in iterator:
@@ -98,8 +92,9 @@ def _pairwise_EMD_CD_(sample_pcs, ref_pcs, batch_size, verbose=True):
                 batch_size_ref, -1, -1)
             sample_batch_exp = sample_batch_exp.contiguous()
 
-            dl, dr = distChamfer(sample_batch_exp, ref_batch)
-            cd_lst.append((dl.mean(dim=1) + dr.mean(dim=1)).view(1, -1))
+        
+            dist_forward = chamferDist(sample_batch, ref_batch)
+            cd_lst.append(dist_forward)
 
             emd_batch = emd_approx(sample_batch_exp, ref_batch)
             emd_lst.append(emd_batch.view(1, -1))

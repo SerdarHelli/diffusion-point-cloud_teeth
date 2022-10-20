@@ -49,7 +49,7 @@ parser.add_argument('--lr', type=float, default=2e-3)
 parser.add_argument('--weight_decay', type=float, default=0)
 parser.add_argument('--max_grad_norm', type=float, default=10)
 parser.add_argument('--end_lr', type=float, default=1e-4)
-parser.add_argument('--sched_start_epoch', type=int, default=200*THOUSAND)
+parser.add_argument('--sched_start_epoch', type=int, default=20*THOUSAND)
 parser.add_argument('--sched_end_epoch', type=int, default=400*THOUSAND)
 
 # Training
@@ -61,7 +61,6 @@ parser.add_argument('--device', type=str, default='cuda')
 parser.add_argument('--max_iters', type=int, default=float('inf'))
 parser.add_argument('--val_freq', type=int, default=1000)
 parser.add_argument('--test_freq', type=int, default=30*THOUSAND)
-parser.add_argument('--test_size', type=int, default=400)
 parser.add_argument('--tag', type=str, default=None)
 args = parser.parse_args()
 seed_all(args.seed)
@@ -162,18 +161,18 @@ def validate_inspect(it):
 def test(it):
     ref_pcs = []
     for i, data in enumerate(val_dset):
-        if i >= args.test_size:
+        if i >= val_dset.__len__() :
             break
         ref_pcs.append(data['pointcloud'].unsqueeze(0))
     ref_pcs = torch.cat(ref_pcs, dim=0)
 
     gen_pcs = []
-    for i in tqdm(range(0, math.ceil(args.test_size / args.val_batch_size)), 'Generate'):
+    for i in tqdm(range(0, math.ceil(val_dset.__len__() / args.val_batch_size)), 'Generate'):
         with torch.no_grad():
             z = torch.randn([args.val_batch_size, args.latent_dim]).to(args.device)
             x = model.sample(z, args.sample_num_points, flexibility=args.flexibility)
             gen_pcs.append(x.detach().cpu())
-    gen_pcs = torch.cat(gen_pcs, dim=0)[:args.test_size]
+    gen_pcs = torch.cat(gen_pcs, dim=0)[:val_dset.__len__() ]
 
     # Denormalize point clouds, all shapes have zero mean.
     # [WARNING]: Do NOT denormalize!
