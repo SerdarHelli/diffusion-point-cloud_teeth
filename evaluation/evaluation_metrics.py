@@ -44,7 +44,7 @@ def EMD_CD(sample_pcs, ref_pcs, batch_size, reduced=True):
         ref_batch = ref_pcs[b_start:b_end]
 
 
-        dist_forward = chamferDist(sample_batch, ref_batch)
+        dist_forward = chamferDist( ref_batch.unsqueeze(0),sample_batch.unsqueeze(0))
         cd_lst.append(dist_forward)
 
         emd_batch = emd_approx(sample_batch, ref_batch)
@@ -66,9 +66,7 @@ def EMD_CD(sample_pcs, ref_pcs, batch_size, reduced=True):
 
 def _pairwise_EMD_CD_(sample_pcs, ref_pcs, batch_size, verbose=True):
     N_sample = sample_pcs.shape[0]
-    N_ref = ref_pcs.shape[0]
     all_cd = []
-    all_emd = []
     iterator = range(N_sample)
     chamferDist = ChamferDistance()
 
@@ -77,37 +75,22 @@ def _pairwise_EMD_CD_(sample_pcs, ref_pcs, batch_size, verbose=True):
     for sample_b_start in iterator:
         sample_batch = sample_pcs[sample_b_start]
 
-        cd_lst = []
-        emd_lst = []
-        sub_iterator = range(0, N_ref, batch_size)
+ 
         # if verbose:
         #     sub_iterator = tqdm(sub_iterator, leave=False)
-        for ref_b_start in sub_iterator:
-            ref_b_end = min(N_ref, ref_b_start + batch_size)
-            ref_batch = ref_pcs[ref_b_start:ref_b_end]
+        ref_batch = ref_pcs[sample_b_start]
 
-            batch_size_ref = ref_batch.size(0)
-            point_dim = ref_batch.size(2)
-            sample_batch_exp = sample_batch.view(1, -1, point_dim).expand(
-                batch_size_ref, -1, -1)
-            sample_batch_exp = sample_batch_exp.contiguous()
-
-        
-            dist_forward = chamferDist(sample_batch, ref_batch)
-            cd_lst.append(dist_forward)
-
-            emd_batch = emd_approx(sample_batch_exp, ref_batch)
-            emd_lst.append(emd_batch.view(1, -1))
-
-        cd_lst = torch.cat(cd_lst, dim=1)
-        emd_lst = torch.cat(emd_lst, dim=1)
-        all_cd.append(cd_lst)
-        all_emd.append(emd_lst)
+        batch_size_ref = ref_batch.size(0)
+        point_dim = ref_batch.size(2)
+        sample_batch_exp = sample_batch.view(1, -1, point_dim).expand(
+            batch_size_ref, -1, -1)
+        sample_batch_exp = sample_batch_exp.contiguous() 
+        dist_forward = chamferDist( ref_batch.unsqueeze(0),sample_batch.unsqueeze(0))
+        all_cd.append(dist_forward)
 
     all_cd = torch.cat(all_cd, dim=0)  # N_sample, N_ref
-    all_emd = torch.cat(all_emd, dim=0)  # N_sample, N_ref
 
-    return all_cd, all_emd
+    return all_cd
 
 
 # Adapted from https://github.com/xuqiantong/
@@ -181,7 +164,7 @@ def compute_all_metrics(sample_pcs, ref_pcs, batch_size):
     results = {}
 
     print("Pairwise EMD CD")
-    M_rs_cd, M_rs_emd = _pairwise_EMD_CD_(ref_pcs, sample_pcs, batch_size)
+    M_rs_cd = _pairwise_EMD_CD_(ref_pcs, sample_pcs, batch_size)
 
     ## CD
     res_cd = lgan_mmd_cov(M_rs_cd.t())
@@ -198,8 +181,8 @@ def compute_all_metrics(sample_pcs, ref_pcs, batch_size):
     for k, v in results.items():
         print('[%s] %.8f' % (k, v.item()))
 
-    M_rr_cd, M_rr_emd = _pairwise_EMD_CD_(ref_pcs, ref_pcs, batch_size)
-    M_ss_cd, M_ss_emd = _pairwise_EMD_CD_(sample_pcs, sample_pcs, batch_size)
+    M_rr_cd = _pairwise_EMD_CD_(ref_pcs, ref_pcs, batch_size)
+    M_ss_cd = _pairwise_EMD_CD_(sample_pcs, sample_pcs, batch_size)
 
     # 1-NN results
     ## CD
