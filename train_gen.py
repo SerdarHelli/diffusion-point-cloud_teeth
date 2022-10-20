@@ -188,7 +188,6 @@ def test(it):
     # CD related metrics
     writer.add_scalar('test/Coverage_CD', results['lgan_cov-CD'], global_step=it)
     writer.add_scalar('test/MMD_CD', results['lgan_mmd-CD'], global_step=it)
-    writer.add_scalar('test/1NN_CD', results['1-NN-CD-acc'], global_step=it)
     # EMD related metrics
     # writer.add_scalar('test/Coverage_EMD', results['lgan_cov-EMD'], global_step=it)
     # writer.add_scalar('test/MMD_EMD', results['lgan_mmd-EMD'], global_step=it)
@@ -201,7 +200,6 @@ def test(it):
     # logger.info('[Test] 1NN-Accur | CD %.6f | EMD %.6f' % (results['1-NN-CD-acc'], results['1-NN-EMD-acc']))
     logger.info('[Test] Coverage  | CD %.6f | EMD n/a' % (results['lgan_cov-CD'], ))
     logger.info('[Test] MinMatDis | CD %.6f | EMD n/a' % (results['lgan_mmd-CD'], ))
-    logger.info('[Test] 1NN-Accur | CD %.6f | EMD n/a' % (results['1-NN-CD-acc'], ))
     logger.info('[Test] JsnShnDis | %.6f ' % (results['jsd']))
 
 # Main loop

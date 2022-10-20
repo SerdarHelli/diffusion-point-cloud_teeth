@@ -73,20 +73,12 @@ def _pairwise_EMD_CD_(sample_pcs, ref_pcs, batch_size, verbose=True):
     if verbose:
         iterator = tqdm(iterator, desc='Pairwise EMD-CD')
     for sample_b_start in iterator:
-        sample_batch = sample_pcs[sample_b_start]
+        sample_batch = sample_pcs[sample_b_start] 
 
- 
-        # if verbose:
-        #     sub_iterator = tqdm(sub_iterator, leave=False)
         ref_batch = ref_pcs[sample_b_start]
 
-        batch_size_ref = ref_batch.size(0)
-        point_dim = ref_batch.size(2)
-        sample_batch_exp = sample_batch.view(1, -1, point_dim).expand(
-            batch_size_ref, -1, -1)
-        sample_batch_exp = sample_batch_exp.contiguous() 
         dist_forward = chamferDist( ref_batch.unsqueeze(0),sample_batch.unsqueeze(0))
-        all_cd.append(dist_forward)
+        all_cd.append(dist_forward.view(-1,1))
 
     all_cd = torch.cat(all_cd, dim=0)  # N_sample, N_ref
 
@@ -186,10 +178,7 @@ def compute_all_metrics(sample_pcs, ref_pcs, batch_size):
 
     # 1-NN results
     ## CD
-    one_nn_cd_res = knn(M_rr_cd, M_rs_cd, M_ss_cd, 1, sqrt=False)
-    results.update({
-        "1-NN-CD-%s" % k: v for k, v in one_nn_cd_res.items() if 'acc' in k
-    })
+
     ## EMD
     # one_nn_emd_res = knn(M_rr_emd, M_rs_emd, M_ss_emd, 1, sqrt=False)
     # results.update({
